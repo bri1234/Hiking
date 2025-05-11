@@ -26,11 +26,15 @@ IN THE SOFTWARE.
 import gpxpy
 import gpxpy.gpx
 import argparse
-from convert_fit_to_gpx import ReadFitFile, GetTrackPointsFromMessages, TrackPoint
+from convert_fit_to_gpx import ReadFitFile, GetTrackPointsFromMessages
 from gpx_statistic import TimespanToHoursMinutesSeconds
 from pathlib import Path
+import matplotlib.pyplot as plt
+import math
 
-def CreateGpxTrackFromFitActivity(fitFilename : str) -> tuple[gpxpy.gpx.GPX, list[TrackPoint]]:
+stoppedSpeedThreshold = 0.15
+
+def CreateGpxTrackFromFitActivity(fitFilename : str, removePointsBegin : int = 0, removePointsEnd : int = 0) -> gpxpy.gpx.GPX:
     """ Converts FIT activity track to GPX track.
 
     Args:
@@ -41,6 +45,12 @@ def CreateGpxTrackFromFitActivity(fitFilename : str) -> tuple[gpxpy.gpx.GPX, lis
     """
     messages = ReadFitFile(fitFilename)
     pointList = GetTrackPointsFromMessages(messages)
+
+    if removePointsBegin > 0:
+        pointList = pointList[removePointsBegin : ]
+
+    if removePointsEnd > 0:
+        pointList = pointList[ : -removePointsEnd]
 
     gpx = gpxpy.gpx.GPX()
 
@@ -57,7 +67,7 @@ def CreateGpxTrackFromFitActivity(fitFilename : str) -> tuple[gpxpy.gpx.GPX, lis
         point = gpxpy.gpx.GPXTrackPoint(p.Latitude, p.Longitude, elevation=p.Altitude, time=p.Time)
         gpx_segment.points.append(point)
 
-    return gpx, pointList
+    return gpx
 
 def OutputStatistic(gpx : gpxpy.gpx.GPX, filename : str) -> None:
     """ Creates a HTML table with the track statistic and saves it.
@@ -66,7 +76,24 @@ def OutputStatistic(gpx : gpxpy.gpx.GPX, filename : str) -> None:
         gpx (gpxpy.gpx.GPX): The track.
         filename (str): The filename for the HTML track statistic.
     """
-    moving_time, _, moving_distance, _, _ = gpx.get_moving_data(stopped_speed_threshold=0.1)
+    moving_time, stopped_time, moving_distance, _, max_speed = gpx.get_moving_data(stopped_speed_threshold=stoppedSpeedThreshold)
+
+    print(f"Track length: {moving_distance / 1000:.2f} km")
+
+    hours, minutes, _ = TimespanToHoursMinutesSeconds(moving_time)
+    print(f"Moving time: {hours} Hours {minutes:02d} Minutes")
+
+    print(f"Average speed: {moving_distance / moving_time * 3.6:.1f} km/h")
+
+    hours, minutes, _ = TimespanToHoursMinutesSeconds(stopped_time)
+    print(f"Pause time: {hours} Hours {minutes:02d} Minutes")
+
+    print(f"Maximum speed: {max_speed * 3.6:.1f} km/h")
+    
+    print(f"Number of GPS points: {gpx.get_points_no()}")
+
+    minElevation, maxElevation = gpx.get_elevation_extremes()
+    print(f"Minimum altitude: {minElevation:.1f} m Maximum altitude: {maxElevation:.1f} m")
 
     with open(filename, "w") as file:
         file.write("<table>\n")
@@ -76,6 +103,8 @@ def OutputStatistic(gpx : gpxpy.gpx.GPX, filename : str) -> None:
         file.write(f"<td>Dauer:</td><td>{hours} Stunden {minutes:02d} Minuten</td>\n")
 
         file.write(f"<td>Länge:</td><td>{moving_distance / 1000:.1f} km</td>\n")
+
+        file.write(f"<td>Geschwindigkeit:</td><td>{moving_distance / moving_time * 3.6:.1f} km/h</td>\n")
 
         minElevation, maxElevation = gpx.get_elevation_extremes()
         if maxElevation is None or minElevation is None:
@@ -89,11 +118,12 @@ def OutputStatistic(gpx : gpxpy.gpx.GPX, filename : str) -> None:
         file.write("<td>Schwierigkeitsgrad:</td><td></td>\n")
         file.write("<td>Kondition:</td><td></td>\n")
         file.write("<td>Ausrüstung:</td><td></td>\n")
+        file.write("<td></td><td></td>\n")
         file.write("</tr>\n")
 
         file.write("</table>\n")
 
-def OutputSmoothedTrack(gpx : gpxpy.gpx.GPX, filename : str) -> None:
+def OutputSmoothedTrack(gpx : gpxpy.gpx.GPX, filename : str) -> gpxpy.gpx.GPX:
     """ Creates a smoothed track and saves it.
 
     Args:
@@ -108,33 +138,79 @@ def OutputSmoothedTrack(gpx : gpxpy.gpx.GPX, filename : str) -> None:
     with open(filename, "w") as file:
         file.write(xml)
 
-def OutputAltitudeProfile(points : list[TrackPoint], filename : str) -> None:
+    return cloned_gpx
+
+def OutputAltitudeProfile(gpx : gpxpy.gpx.GPX, filename : str, width : int, height : int) -> None:
     """ Creates an altutude profile image and saves it (PNG image).
 
     Args:
         gpx (gpxpy.gpx.GPX): The track.
         filename (str): The filename for the PNG image.
     """
-    pass
-    
+    pointList = gpx.get_points_data()
+    distance : list[float] = []
+    altitude : list[float] = []
 
-def PrepareTrackForPublish(fitFilename : str) -> None:
+    for p in pointList:
+        distance.append(p.distance_from_start / 1000)
+        altitude.append(p.point.elevation)
+
+    minElevation, maxElevation = gpx.get_elevation_extremes()
+    if minElevation is None or maxElevation is None:
+        raise Exception("missing GPS altitude")
+    
+    yMin = math.floor(minElevation / 50) * 50
+    yMax = math.ceil(maxElevation / 50) * 50
+    if yMax - yMin < 200:
+        yMax = yMin + 200
+    
+    dpi = plt.rcParams["figure.dpi"]
+    fig, ax = plt.subplots(figsize=(width / dpi, height / dpi)) # type: ignore
+    ax.plot(distance, altitude) # type: ignore
+    ax.set_xlabel("Entfernung in km") # type: ignore
+    ax.set_ylabel("Höhe in m") # type: ignore
+    
+    plt.grid() # type: ignore
+    plt.fill_between(distance, altitude, color="#9999C0") # type: ignore
+    plt.ylim(yMin, yMax) # type: ignore
+    
+    fig.tight_layout()
+    plt.savefig(filename) # type: ignore
+
+    plt.show() # type: ignore
+
+def PrepareTrackForPublish(fitFilename : str, imgWidth : int, imgHeight : int, removePointsBegin : int = 0, removePointsEnd : int = 0) -> None:
     """ Prepares the track for publishing: creates statistic, high profile and a smoothed GPX track.
 
     Args:
         fitFilename (str): the FIT activity filename.
     """
 
-    gpx, points = CreateGpxTrackFromFitActivity(fitFilename)
+    gpx = CreateGpxTrackFromFitActivity(fitFilename, removePointsBegin, removePointsEnd)
 
     OutputStatistic(gpx, str(Path(fitFilename).with_suffix(".html")))
-    OutputSmoothedTrack(gpx, str(Path(fitFilename).with_suffix(".gpx")))
-    OutputAltitudeProfile(points, str(Path(fitFilename).with_suffix(".png")))
+    smoothedTrack = OutputSmoothedTrack(gpx, str(Path(fitFilename).with_suffix(".gpx")))
+
+    OutputAltitudeProfile(smoothedTrack, str(Path(fitFilename).with_suffix(".png")), imgWidth, imgHeight)
 
 if __name__ == "__main__":
 
     argParser = argparse.ArgumentParser("prepare_track_for_publish", description="Prepares the track for publishing: creates statistic, high profile and a smoothed GPX track.")
     argParser.add_argument("filename", help='input filename "abc.FIT"')
+    argParser.add_argument("-rb", "--remove_begin", help="remove number of points from the begin of the track", required=False)
+    argParser.add_argument("-re", "--remove_end", help="remove number of points from the end of the track", required=False)
+    argParser.add_argument("-sst", "--stopped_speed_threshold", help="threshold speed to differ between move and pause", required=False)
     args = argParser.parse_args()
 
-    PrepareTrackForPublish(args.filename)
+    removePointsBegin = abs(int(args.remove_begin)) if args.remove_begin is not None else 0
+    removePointsEnd = abs(int(args.remove_end)) if args.remove_end is not None else 0
+
+    if removePointsBegin > 0:
+        print(f"removing {removePointsBegin} points from the begin of the track")
+    if removePointsEnd > 0:
+        print(f"removing {removePointsEnd} points from the end of the track")
+
+    if args.stopped_speed_threshold is not None:
+        stoppedSpeedThreshold = float(args.stopped_speed_threshold)
+
+    PrepareTrackForPublish(args.filename, 1000, 200, removePointsBegin, removePointsEnd)

@@ -213,15 +213,15 @@ if __name__ == "__main__":
 
     argParser = argparse.ArgumentParser("convert_fit_to_gpx", description="Converts tracks from Garmin activity FIT files to GPX files.")
     argParser.add_argument("filename", help='input filename "abc.FIT"')
-    argParser.add_argument("-rb", "--removebegin", help="remove number of points from the begin of the track", required=False)
-    argParser.add_argument("-re", "--removeend", help="remove number of points from the end of the track", required=False)
+    argParser.add_argument("-rb", "--remove_begin", help="remove number of points from the begin of the track", required=False)
+    argParser.add_argument("-re", "--remove_end", help="remove number of points from the end of the track", required=False)
     args = argParser.parse_args()
 
     inputFilename = args.filename
     outputFilename = str(Path(inputFilename).with_suffix(".gpx"))
 
-    removePointsBegin = abs(int(args.removebegin)) if args.removebegin is not None else 0
-    removePointsEnd = abs(int(args.removeend)) if args.removeend is not None else 0
+    removePointsBegin = abs(int(args.remove_begin)) if args.remove_begin is not None else 0
+    removePointsEnd = abs(int(args.remove_end)) if args.remove_end is not None else 0
         
     print(f"Convert activity FIT file {inputFilename} to GPX file {outputFilename} ...")
     if removePointsBegin > 0:
