@@ -52,16 +52,16 @@ def DegreesToSemicircles(degrees : float) -> int:
     """
     return int(degrees * (2 ** 31) / 180.0)
 
-def ReadFitFile(fitFileName : str) -> dict[str, list[Any]]:
+def ReadFitFile(fitFilename : str) -> dict[str, list[Any]]:
     """ Reads the FIT file.
 
     Args:
-        fitFileName (str): FIT filename.
+        fitFilename (str): FIT filename.
 
     Returns:
         dict[str, list[Any]]: The messages stored in the FIT file.
     """
-    stream = garmin.Stream.from_file(fitFileName) # type: ignore
+    stream = garmin.Stream.from_file(fitFilename) # type: ignore
 
     decoder = garmin.Decoder(stream)
     if not decoder.is_fit():
@@ -106,7 +106,7 @@ def GetTrackPointsFromMessages(messages : dict[str, list[Any]]) -> list[TrackPoi
 
     return pointList
 
-def CreateNodeTrkSeq(doc : xmd.Document, pointList : list[TrackPoint]) -> xmd.Element:
+def __CreateNodeTrkSeq(doc : xmd.Document, pointList : list[TrackPoint]) -> xmd.Element:
     """ Creates the GPX track sequence.
 
     Args:
@@ -136,7 +136,7 @@ def CreateNodeTrkSeq(doc : xmd.Document, pointList : list[TrackPoint]) -> xmd.El
 
     return nodeTrkSeq
 
-def CreateNodeTrk(doc : xmd.Document, name : str, trackType : str, pointList : list[TrackPoint]) -> xmd.Element:
+def __CreateNodeTrk(doc : xmd.Document, name : str, trackType : str, pointList : list[TrackPoint]) -> xmd.Element:
     """ Creates the GPX track node.
 
     Args:
@@ -159,16 +159,16 @@ def CreateNodeTrk(doc : xmd.Document, name : str, trackType : str, pointList : l
     nodeType.appendChild(doc.createTextNode(trackType))
     nodeTrk.appendChild(nodeType)
 
-    nodeTrkSeq = CreateNodeTrkSeq(doc, pointList)
+    nodeTrkSeq = __CreateNodeTrkSeq(doc, pointList)
     nodeTrk.appendChild(nodeTrkSeq)
 
     return nodeTrk
 
-def WriteGpxFile(gpxFileName : str, name : str, trackType : str, pointList : list[TrackPoint]) -> None:
+def WriteGpxFile(gpxFilename : str, name : str, trackType : str, pointList : list[TrackPoint]) -> None:
     """ Writes the GPX file
 
     Args:
-        gpxFileName (str): _description_
+        gpxFilename (str): _description_
         name (str): The name of the track.
         trackType (str): The type of the track activity, e.g. hiking.
         pointList (list[TrackPoint]): List of track points.
@@ -185,15 +185,15 @@ def WriteGpxFile(gpxFileName : str, name : str, trackType : str, pointList : lis
     nodeGpx.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
     nodeGpx.setAttribute("xsi:schemaLocation", "http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/11.xsd")
 
-    nodeTrk = CreateNodeTrk(doc, name, trackType, pointList)
+    nodeTrk = __CreateNodeTrk(doc, name, trackType, pointList)
     nodeGpx.appendChild(nodeTrk)
 
-    with open(gpxFileName, "w") as file:
+    with open(gpxFilename, "w") as file:
         doc.writexml(file, encoding="UTF-8", addindent="  ", newl="\n")
 
-def ConvertFitToGpx(fitFileName : str, gpxFileName : str, removePointsBegin : int = 0, removePointsEnd : int = 0) -> None:
+def ConvertFitFileToGpxFile(fitFilename : str, gpxFilename : str, removePointsBegin : int = 0, removePointsEnd : int = 0) -> None:
 
-    messages = ReadFitFile(fitFileName)
+    messages = ReadFitFile(fitFilename)
 
     trackType = messages["sport_mesgs"][0]["sport"]
     pointList = GetTrackPointsFromMessages(messages)
@@ -206,8 +206,8 @@ def ConvertFitToGpx(fitFileName : str, gpxFileName : str, removePointsBegin : in
 
     print(f"Number of points: {len(pointList)}")
     
-    name = Path(fitFileName).stem
-    WriteGpxFile(gpxFileName, name, trackType, pointList)
+    name = Path(fitFilename).stem
+    WriteGpxFile(gpxFilename, name, trackType, pointList)
 
 if __name__ == "__main__":
 
@@ -217,19 +217,19 @@ if __name__ == "__main__":
     argParser.add_argument("-re", "--removeend", help="remove number of points from the end of the track", required=False)
     args = argParser.parse_args()
 
-    inputFileName = args.filename
-    outputFileName = str(Path(inputFileName).with_suffix(".gpx"))
+    inputFilename = args.filename
+    outputFilename = str(Path(inputFilename).with_suffix(".gpx"))
 
     removePointsBegin = abs(int(args.removebegin)) if args.removebegin is not None else 0
     removePointsEnd = abs(int(args.removeend)) if args.removeend is not None else 0
         
-    print(f"Convert activity FIT file {inputFileName} to GPX file {outputFileName} ...")
+    print(f"Convert activity FIT file {inputFilename} to GPX file {outputFilename} ...")
     if removePointsBegin > 0:
         print(f"removing {removePointsBegin} points from the begin of the track")
     if removePointsEnd > 0:
         print(f"removing {removePointsEnd} points from the end of the track")
 
-    ConvertFitToGpx(inputFileName, outputFileName, removePointsBegin, removePointsEnd)
+    ConvertFitFileToGpxFile(inputFilename, outputFilename, removePointsBegin, removePointsEnd)
 
     print("done")
 

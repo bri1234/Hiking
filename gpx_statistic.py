@@ -27,49 +27,62 @@ import gpxpy
 import argparse
 
 def TimespanToHoursMinutesSeconds(timeSpan : float) -> tuple[int, int, int]:
+    """ Converts timespan in seconds to hours, minutes and seconds.
+
+    Args:
+        timeSpan (float): The timespan in seconds.
+
+    Returns:
+        tuple[int, int, int]: The timespan in hours, minutes, seconds.
+    """
     hours = int(timeSpan // 3600)
     minutes = int(timeSpan % 3600 // 60)
     seconds = int(timeSpan % 60)
 
     return hours, minutes, seconds
 
-def ReadGpxFile(fileName : str) -> None:
+def ShowGpxFileStatistic(filename : str) -> None:
+    """ Shows 
 
-    with open(fileName, "r") as file:
+    Args:
+        filename (str): _description_
+    """
+
+    with open(filename, "r") as file:
         gpx = gpxpy.parse(file)
     
     moving_time, stopped_time, moving_distance, _, max_speed = gpx.get_moving_data(stopped_speed_threshold=0.1)
 
-    print(f"Streckenlänge: {moving_distance / 1000:.2f} km")
+    print(f"Track length: {moving_distance / 1000:.2f} km")
 
     hours, minutes, _ = TimespanToHoursMinutesSeconds(moving_time)
-    print(f"Wanderzeit: {hours} Stunden {minutes:02d} Minuten")
+    print(f"Moving time: {hours} Hours {minutes:02d} Minutes")
 
     hours, minutes, _ = TimespanToHoursMinutesSeconds(stopped_time)
-    print(f"Pausenzeit: {hours} Stunden {minutes:02d} Minuten")
+    print(f"Pause time: {hours} Hours {minutes:02d} Minutes")
 
-    print(f"Maximale Geschwindigkeit: {max_speed * 3.6:.1f} km/h")
+    print(f"Maximum speed: {max_speed * 3.6:.1f} km/h")
     
-    print(f"Anzahl GPS Punkte: {gpx.get_points_no()}")
+    print(f"Number of GPS points: {gpx.get_points_no()}")
 
     minElevation, maxElevation = gpx.get_elevation_extremes()
-    print(f"Minimale Höhe: {minElevation:.1f} m Maximale Höhe: {maxElevation:.1f} m")
+    print(f"Minimum altitude: {minElevation:.1f} m Maximum altitude: {maxElevation:.1f} m")
 
     cloned_gpx = gpx.clone()
     cloned_gpx.reduce_points(cloned_gpx.get_points_no() // 2, min_distance=10)
     cloned_gpx.smooth()
-    print(f"Anzahl GPS Punkte geglättet: {cloned_gpx.get_points_no()}")
+    print(f"Number of GPS points smoothed: {cloned_gpx.get_points_no()}")
     
-    xml = cloned_gpx.to_xml()
-    with open("test.gpx", "w") as file:
-        file.write(xml)
+    # xml = cloned_gpx.to_xml()
+    # with open("test.gpx", "w") as file:
+    #     file.write(xml)
 
 if __name__ == "__main__":
 
-    # ReadGpxFile('2025-05-09 10.08.20.gpx')
+    # ShowGpxFileStatistic('2025-05-09 10.08.20.gpx')
 
     argParser = argparse.ArgumentParser("gpx_statistic", description="Calculates track statistic from GPX file.")
     argParser.add_argument("filename", help='input filename "abc.GPX"')
     args = argParser.parse_args()
 
-    ReadGpxFile(args.filename)
+    ShowGpxFileStatistic(args.filename)
