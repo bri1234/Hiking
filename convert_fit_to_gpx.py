@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """
 
 Copyright (C) 2025  Torsten Brischalle
@@ -30,6 +31,12 @@ from datetime import datetime
 from typing import Any
 from pathlib import Path
 
+class TrackPoint:
+    Latitude : float
+    Longitude : float
+    Altitude  : float
+    Time : datetime
+    
 def SemicircleToDegress(semicircles : int) -> float:
     """ Converts semicircles to degrees.
 
@@ -74,12 +81,6 @@ def ReadFitFile(fitFilename : str) -> dict[str, list[Any]]:
 
     return messages # type: ignore
 
-class TrackPoint:
-    Latitude : float
-    Longitude : float
-    Altitude  : float
-    Time : datetime
-    
 def GetTrackPointsFromMessages(messages : dict[str, list[Any]]) -> list[TrackPoint]:
     """ Returns the list of track points.
 

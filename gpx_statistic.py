@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 """
 
 Copyright (C) 2025  Torsten Brischalle

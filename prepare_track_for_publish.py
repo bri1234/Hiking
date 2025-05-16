@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 """
 
 Copyright (C) 2025  Torsten Brischalle
@@ -85,32 +87,41 @@ def OutputStatistic(gpx : gpxpy.gpx.GPX, filename : str) -> None:
 
     print(f"Average speed: {moving_distance / moving_time * 3.6:.1f} km/h")
 
-    hours, minutes, _ = TimespanToHoursMinutesSeconds(stopped_time)
-    print(f"Pause time: {hours} Hours {minutes:02d} Minutes")
+    hours_pause, minutes_pause, _ = TimespanToHoursMinutesSeconds(stopped_time)
+    print(f"Pause time: {hours_pause} Hours {minutes_pause:02d} Minutes")
 
     print(f"Maximum speed: {max_speed * 3.6:.1f} km/h")
     
     print(f"Number of GPS points: {gpx.get_points_no()}")
 
     minElevation, maxElevation = gpx.get_elevation_extremes()
+    if maxElevation is None or minElevation is None:
+        raise Exception("missing GPS elevation data")
+    
     print(f"Minimum altitude: {minElevation:.1f} m Maximum altitude: {maxElevation:.1f} m")
+    print(f"Höhenunterschied: {maxElevation - minElevation:.1f} m")
+
+    uphill, downhill = gpx.get_uphill_downhill()
+    print(f"Uphill: {uphill:.1f} m downhill: {downhill:.1f} m")
 
     with open(filename, "w") as file:
         file.write("<table>\n")
         file.write("<tr>\n")
 
-        hours, minutes, _ = TimespanToHoursMinutesSeconds(moving_time)
         file.write(f"<td>Dauer:</td><td>{hours} Stunden {minutes:02d} Minuten</td>\n")
 
         file.write(f"<td>Länge:</td><td>{moving_distance / 1000:.1f} km</td>\n")
 
         file.write(f"<td>Geschwindigkeit:</td><td>{moving_distance / moving_time * 3.6:.1f} km/h</td>\n")
-
-        minElevation, maxElevation = gpx.get_elevation_extremes()
-        if maxElevation is None or minElevation is None:
-            raise Exception("missing GPS elevation data")
         
-        file.write(f"<td>Höhenunterschied:</td><td>{(maxElevation - minElevation):.1f} m</td>\n")
+        file.write("</tr>\n")
+        file.write("<tr>\n")
+
+        file.write(f"<td>Minimale Höhe:</td><td>{minElevation:.1f} m</td>\n")
+        file.write(f"<td>Minimale Höhe:</td><td>{maxElevation:.1f} m</td>\n")
+        file.write(f"<td>Höhenunterschied:</td><td>{maxElevation - minElevation:.1f} m</td>\n")
+        file.write(f"<td>Bergauf:</td><td>{uphill:.1f} m</td>\n")
+        file.write(f"<td>Bergab:</td><td>{downhill:.1f} m</td>\n")
         
         file.write("</tr>\n")
 
@@ -131,7 +142,7 @@ def OutputSmoothedTrack(gpx : gpxpy.gpx.GPX, filename : str) -> gpxpy.gpx.GPX:
         filename (str): The filename for the smoothed track.
     """
     cloned_gpx = gpx.clone()
-    cloned_gpx.reduce_points(cloned_gpx.get_points_no() // 2, min_distance=10)
+    cloned_gpx.reduce_points(gpx.get_points_no() // 2, min_distance=10)
     cloned_gpx.smooth()
 
     xml = cloned_gpx.to_xml()
