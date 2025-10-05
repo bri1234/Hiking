@@ -33,8 +33,19 @@ from gpx_statistic import TimespanToHoursMinutesSeconds
 from pathlib import Path
 import matplotlib.pyplot as plt
 import math
+import create_map_googlemaps
+import create_map_openstreetmap
 
 stoppedSpeedThreshold = 0.15
+
+ALTITUDE_PROFILE_IMG_WIDTH = 1000
+ALTITUDE_PROFILE_IMG_HEIGHT = 200
+
+MAP_PREVIEW_IMG_WIDTH = 400
+MAP_PREVIEW_IMG_HEIGHT = 400
+
+MAP_IMG_WIDTH = 1500
+MAP_IMG_HEIGHT = 1500
 
 def CreateGpxTrackFromFitActivity(fitFilename : str, removePointsBegin : int = 0, removePointsEnd : int = 0) -> gpxpy.gpx.GPX:
     """ Converts FIT activity track to GPX track.
@@ -190,7 +201,10 @@ def OutputAltitudeProfile(gpx : gpxpy.gpx.GPX, filename : str, width : int, heig
 
     plt.show() # type: ignore
 
-def PrepareTrackForPublish(fitFilename : str, imgWidth : int, imgHeight : int, removePointsBegin : int = 0, removePointsEnd : int = 0) -> None:
+def PrepareTrackForPublish(fitFilename : str, altitudeProfileImgWidth : int, altitudeProfileImgHeight : int,
+                           mapPreviewImgWidth : int, mapPreviewImgHeight : int,
+                           mapImgWidth : int, mapImgHeight : int,
+                           removePointsBegin : int = 0, removePointsEnd : int = 0) -> None:
     """ Prepares the track for publishing: creates statistic, high profile and a smoothed GPX track.
 
     Args:
@@ -199,10 +213,32 @@ def PrepareTrackForPublish(fitFilename : str, imgWidth : int, imgHeight : int, r
 
     gpx = CreateGpxTrackFromFitActivity(fitFilename, removePointsBegin, removePointsEnd)
 
-    OutputStatistic(gpx, str(Path(fitFilename).with_suffix(".html")))
-    smoothedTrack = OutputSmoothedTrack(gpx, str(Path(fitFilename).with_suffix(".gpx")))
+    filename = str(Path(fitFilename).with_suffix(".html"))
+    OutputStatistic(gpx, filename)
 
-    OutputAltitudeProfile(smoothedTrack, str(Path(fitFilename).with_suffix(".png")), imgWidth, imgHeight)
+    filename = str(Path(fitFilename).with_suffix(".gpx"))
+    smoothedTrack = OutputSmoothedTrack(gpx, filename)
+
+    filename = str(Path(fitFilename).with_suffix("_altitude.png"))
+    OutputAltitudeProfile(smoothedTrack, filename, altitudeProfileImgWidth, altitudeProfileImgHeight)
+
+    filename = str(Path(fitFilename).with_suffix("_map_preview1.png"))
+    create_map_openstreetmap.CreateImageWithTrackOnMap(fitFilename, filename, mapPreviewImgWidth, mapPreviewImgHeight, "red", 3)
+
+    filename = str(Path(fitFilename).with_suffix("_map_preview2.png"))
+    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilename, filename, mapPreviewImgWidth, mapPreviewImgHeight, "hybrid", "0xFF000080", 3)
+
+    filename = str(Path(fitFilename).with_suffix("_map_preview3.png"))
+    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilename, filename, mapPreviewImgWidth, mapPreviewImgHeight, "terrain", "0xFF000080", 3)
+
+    filename = str(Path(fitFilename).with_suffix("_map1.png"))
+    create_map_openstreetmap.CreateImageWithTrackOnMap(fitFilename, filename, mapImgWidth, mapImgHeight, "red", 3)
+
+    filename = str(Path(fitFilename).with_suffix("_map2.png"))
+    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilename, filename, mapImgWidth, mapImgHeight, "hybrid", "0xFF000080", 3)
+
+    filename = str(Path(fitFilename).with_suffix("_map3.png"))
+    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilename, filename, mapImgWidth, mapImgHeight, "terrain", "0xFF000080", 3)
 
 if __name__ == "__main__":
 
@@ -224,4 +260,7 @@ if __name__ == "__main__":
     if args.stopped_speed_threshold is not None:
         stoppedSpeedThreshold = float(args.stopped_speed_threshold)
 
-    PrepareTrackForPublish(args.filename, 1000, 200, removePointsBegin, removePointsEnd)
+    PrepareTrackForPublish(args.filename, ALTITUDE_PROFILE_IMG_WIDTH, ALTITUDE_PROFILE_IMG_HEIGHT,
+                           MAP_PREVIEW_IMG_WIDTH, MAP_PREVIEW_IMG_HEIGHT,
+                           MAP_IMG_WIDTH, MAP_IMG_HEIGHT,
+                           removePointsBegin, removePointsEnd)

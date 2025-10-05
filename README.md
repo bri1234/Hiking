@@ -3,8 +3,15 @@
 ## Requirements
 
 ### Install needed python package
+Pytohn packages:
+- garmin-fit-sdk
+- staticmap
+- gpxpy
+- matplotlib
+- json
+
 ```bash
-python3 -m pip install garmin-fit-sdk
+python3 -m pip install garmin-fit-sdk staticmap gpxpy matplotlib json
 ```
 
 ## convert_fit_to_gpx
@@ -39,13 +46,13 @@ python3 gpx_statistic.py -h
 
 ## prepare_track_for_publish
 
-Creates an elevation profile and statistic of a GARMIN activity FIT file.
+Creates an elevation profile, maps and statistic of a GARMIN activity FIT file.
 
 ### Usage
 ```bash
 python3 prepare_track_for_publish.py input_file.fit
 ```
-Creates an elevation profile and statistic of FIT file "input_file.fit".
+Creates an elevation profile, maps and statistic of FIT file "input_file.fit".
 
 ### Show options
 ```bash
