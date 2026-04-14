@@ -2,7 +2,7 @@
 
 """
 
-Copyright (C) 2025  Torsten Brischalle
+Copyright (C) 2026  Torsten Brischalle
 email: torsten@brischalle.de
 web: http://www.aaabbb.de
 
@@ -44,10 +44,10 @@ def TimespanToHoursMinutesSeconds(timeSpan : float) -> tuple[int, int, int]:
     return hours, minutes, seconds
 
 def ShowGpxFileStatistic(filename : str) -> None:
-    """ Shows 
+    """ Shows statistic of a GPX file.
 
     Args:
-        filename (str): _description_
+        filename (str): The name of the GPX file.
     """
 
     with open(filename, "r") as file:
@@ -78,6 +78,10 @@ def ShowGpxFileStatistic(filename : str) -> None:
     # xml = cloned_gpx.to_xml()
     # with open("test.gpx", "w") as file:
     #     file.write(xml)
+
+###################################################################################################
+# The standalone application starts here.
+###################################################################################################
 
 if __name__ == "__main__":
 

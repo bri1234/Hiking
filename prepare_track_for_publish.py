@@ -2,7 +2,7 @@
 
 """
 
-Copyright (C) 2025  Torsten Brischalle
+Copyright (C) 2026  Torsten Brischalle
 email: torsten@brischalle.de
 web: http://www.aaabbb.de
 
@@ -28,12 +28,12 @@ IN THE SOFTWARE.
 import gpxpy
 import gpxpy.gpx
 import argparse
-from convert_fit_to_gpx import ReadFitFile, GetTrackPointsFromMessages
+from convert_fit_to_gpx import CreateGpxTrackFromFitActivity
 from gpx_statistic import TimespanToHoursMinutesSeconds
 from pathlib import Path
 import matplotlib.pyplot as plt
 import math
-import create_map_googlemaps
+import create_map_googlemaps_js as create_map_googlemaps
 import create_map_openstreetmap
 
 stoppedSpeedThreshold = 0.15
@@ -47,40 +47,6 @@ MAP_PREVIEW_IMG_HEIGHT = 400
 MAP_IMG_WIDTH = 1500
 MAP_IMG_HEIGHT = 1500
 
-def CreateGpxTrackFromFitActivity(fitFilename : str, removePointsBegin : int = 0, removePointsEnd : int = 0) -> gpxpy.gpx.GPX:
-    """ Converts FIT activity track to GPX track.
-
-    Args:
-        fitFilename (str): The FIT activity filename.
-
-    Returns:
-        gpxpy.gpx.GPX: The GPX track.
-    """
-    messages = ReadFitFile(fitFilename)
-    pointList = GetTrackPointsFromMessages(messages)
-
-    if removePointsBegin > 0:
-        pointList = pointList[removePointsBegin : ]
-
-    if removePointsEnd > 0:
-        pointList = pointList[ : -removePointsEnd]
-
-    gpx = gpxpy.gpx.GPX()
-
-    # create a track
-    gpx_track = gpxpy.gpx.GPXTrack()
-    gpx.tracks.append(gpx_track)
-
-    # create a segment
-    gpx_segment = gpxpy.gpx.GPXTrackSegment()
-    gpx_track.segments.append(gpx_segment)
-
-    # add points
-    for p in pointList:
-        point = gpxpy.gpx.GPXTrackPoint(p.Latitude, p.Longitude, elevation=p.Altitude, time=p.Time)
-        gpx_segment.points.append(point)
-
-    return gpx
 
 def OutputStatistic(gpx : gpxpy.gpx.GPX, filename : str) -> None:
     """ Creates a HTML table with the track statistic and saves it.
@@ -115,35 +81,39 @@ def OutputStatistic(gpx : gpxpy.gpx.GPX, filename : str) -> None:
     uphill, downhill = gpx.get_uphill_downhill()
     print(f"Uphill: {uphill:.1f} m downhill: {downhill:.1f} m")
 
+    table = '<table class="stat_table">'
+    tr = '<tr class="stat_tr">'
+    td = '<td class="stat_td">'
+    
     with open(filename, "w") as file:
-        file.write("<table>\n")
-        file.write("<tr>\n")
+        file.write(f"{table}\n")
+        file.write(f"{tr}\n")
 
-        file.write(f"<td>Dauer:</td><td>{hours} Stunden {minutes:02d} Minuten</td>\n")
+        file.write(f"{td}Dauer:</td>{td}{hours} Stunden {minutes:02d} Minuten</td>\n")
 
-        file.write(f"<td>Länge:</td><td>{moving_distance / 1000:.1f} km</td>\n")
+        file.write(f"{td}Länge:</td>{td}{moving_distance / 1000:.1f} km</td>\n")
 
-        file.write(f"<td>Geschwindigkeit:</td><td>{moving_distance / moving_time * 3.6:.1f} km/h</td>\n")
+        file.write(f"{td}Geschwindigkeit:</td>{td}{moving_distance / moving_time * 3.6:.1f} km/h</td>\n")
         
-        file.write("</tr>\n")
-        file.write("<tr>\n")
+        file.write(f"</tr>\n")
+        file.write(f"<tr>\n")
 
-        file.write(f"<td>Minimale Höhe:</td><td>{minElevation:.1f} m</td>\n")
-        file.write(f"<td>Minimale Höhe:</td><td>{maxElevation:.1f} m</td>\n")
-        file.write(f"<td>Höhenunterschied:</td><td>{maxElevation - minElevation:.1f} m</td>\n")
-        file.write(f"<td>Bergauf:</td><td>{uphill:.1f} m</td>\n")
-        file.write(f"<td>Bergab:</td><td>{downhill:.1f} m</td>\n")
+        file.write(f"{td}Minimale Höhe:</td>{td}{minElevation:.1f} m</td>\n")
+        file.write(f"{td}Minimale Höhe:</td>{td}{maxElevation:.1f} m</td>\n")
+        file.write(f"{td}Höhenunterschied:</td>{td}{maxElevation - minElevation:.1f} m</td>\n")
+        file.write(f"{td}Bergauf:</td>{td}{uphill:.1f} m</td>\n")
+        file.write(f"{td}Bergab:</td>{td}{downhill:.1f} m</td>\n")
         
-        file.write("</tr>\n")
+        file.write(f"</tr>\n")
 
-        file.write("<tr>\n")
-        file.write("<td>Schwierigkeitsgrad:</td><td></td>\n")
-        file.write("<td>Kondition:</td><td></td>\n")
-        file.write("<td>Ausrüstung:</td><td></td>\n")
-        file.write("<td></td><td></td>\n")
-        file.write("</tr>\n")
+        file.write(f"<tr>\n")
+        file.write(f"{td}Schwierigkeitsgrad:</td>{td}</td>\n")
+        file.write(f"{td}Kondition:</td>{td}</td>\n")
+        file.write(f"{td}Ausrüstung:</td>{td}</td>\n")
+        file.write(f"{td}</td>{td}</td>\n")
+        file.write(f"</tr>\n")
 
-        file.write("</table>\n")
+        file.write(f"</table>\n")
 
 def OutputSmoothedTrack(gpx : gpxpy.gpx.GPX, filename : str) -> gpxpy.gpx.GPX:
     """ Creates a smoothed track and saves it.
@@ -201,7 +171,7 @@ def OutputAltitudeProfile(gpx : gpxpy.gpx.GPX, filename : str, width : int, heig
 
     plt.show() # type: ignore
 
-def PrepareTrackForPublish(fitFilename : str, altitudeProfileImgWidth : int, altitudeProfileImgHeight : int,
+def PrepareTrackForPublish(fitFilepath : str, altitudeProfileImgWidth : int, altitudeProfileImgHeight : int,
                            mapPreviewImgWidth : int, mapPreviewImgHeight : int,
                            mapImgWidth : int, mapImgHeight : int,
                            removePointsBegin : int = 0, removePointsEnd : int = 0) -> None:
@@ -211,34 +181,36 @@ def PrepareTrackForPublish(fitFilename : str, altitudeProfileImgWidth : int, alt
         fitFilename (str): the FIT activity filename.
     """
 
-    gpx = CreateGpxTrackFromFitActivity(fitFilename, removePointsBegin, removePointsEnd)
+    basedir = str(Path(fitFilepath).with_suffix("")) + "_published"
+    Path(basedir).mkdir(exist_ok=True)
+    basename = str(Path(basedir).joinpath(Path(fitFilepath).stem))
 
-    filename = str(Path(fitFilename).with_suffix(".html"))
-    OutputStatistic(gpx, filename)
+    gpx = CreateGpxTrackFromFitActivity(fitFilepath, removePointsBegin, removePointsEnd)
 
-    filename = str(Path(fitFilename).with_suffix(".gpx"))
-    smoothedTrack = OutputSmoothedTrack(gpx, filename)
+    OutputStatistic(gpx, basename + ".html")
 
-    filename = str(Path(fitFilename).with_suffix("_altitude.png"))
-    OutputAltitudeProfile(smoothedTrack, filename, altitudeProfileImgWidth, altitudeProfileImgHeight)
+    smoothedTrack = OutputSmoothedTrack(gpx, basename + ".gpx")
 
-    filename = str(Path(fitFilename).with_suffix("_map_preview1.png"))
-    create_map_openstreetmap.CreateImageWithTrackOnMap(fitFilename, filename, mapPreviewImgWidth, mapPreviewImgHeight, "red", 3)
+    OutputAltitudeProfile(smoothedTrack, basename + "_altitude.png", altitudeProfileImgWidth, altitudeProfileImgHeight)
 
-    filename = str(Path(fitFilename).with_suffix("_map_preview2.png"))
-    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilename, filename, mapPreviewImgWidth, mapPreviewImgHeight, "hybrid", "0xFF000080", 3)
+    # track_color = "0xFF000080"
+    track_color = "#B00000"
 
-    filename = str(Path(fitFilename).with_suffix("_map_preview3.png"))
-    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilename, filename, mapPreviewImgWidth, mapPreviewImgHeight, "terrain", "0xFF000080", 3)
+    print("create preview maps ...")
+    create_map_openstreetmap.CreateImageWithTrackOnMap(fitFilepath, basename + "_map_preview1.png", mapPreviewImgWidth, mapPreviewImgHeight, "red", 3)
+    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basename + "_map_preview2.png", mapPreviewImgWidth, mapPreviewImgHeight, "hybrid", track_color, 3)
+    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basename + "_map_preview3.png", mapPreviewImgWidth, mapPreviewImgHeight, "terrain", track_color, 3)
 
-    filename = str(Path(fitFilename).with_suffix("_map1.png"))
-    create_map_openstreetmap.CreateImageWithTrackOnMap(fitFilename, filename, mapImgWidth, mapImgHeight, "red", 3)
+    print("create maps ...")
+    create_map_openstreetmap.CreateImageWithTrackOnMap(fitFilepath, basename + "_map1.png", mapImgWidth, mapImgHeight, "red", 3)
+    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basename + "_map2.png", 1280, 1280, "hybrid", track_color, 3)
+    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basename + "_map3.png", 1280, 1280, "terrain", track_color, 3)
 
-    filename = str(Path(fitFilename).with_suffix("_map2.png"))
-    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilename, filename, mapImgWidth, mapImgHeight, "hybrid", "0xFF000080", 3)
+    print("done")
 
-    filename = str(Path(fitFilename).with_suffix("_map3.png"))
-    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilename, filename, mapImgWidth, mapImgHeight, "terrain", "0xFF000080", 3)
+###################################################################################################
+# The standalone application starts here.
+###################################################################################################
 
 if __name__ == "__main__":
 
@@ -260,7 +232,8 @@ if __name__ == "__main__":
     if args.stopped_speed_threshold is not None:
         stoppedSpeedThreshold = float(args.stopped_speed_threshold)
 
-    PrepareTrackForPublish(args.filename, ALTITUDE_PROFILE_IMG_WIDTH, ALTITUDE_PROFILE_IMG_HEIGHT,
+    PrepareTrackForPublish(args.filename,
+                           ALTITUDE_PROFILE_IMG_WIDTH, ALTITUDE_PROFILE_IMG_HEIGHT,
                            MAP_PREVIEW_IMG_WIDTH, MAP_PREVIEW_IMG_HEIGHT,
                            MAP_IMG_WIDTH, MAP_IMG_HEIGHT,
                            removePointsBegin, removePointsEnd)

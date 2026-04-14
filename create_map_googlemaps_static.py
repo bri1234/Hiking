@@ -1,6 +1,6 @@
 """
 
-Copyright (C) 2025  Torsten Brischalle
+Copyright (C) 2026  Torsten Brischalle
 email: torsten@brischalle.de
 web: http://www.aaabbb.de
 
@@ -25,7 +25,14 @@ IN THE SOFTWARE.
 
 import requests
 import json
-from prepare_track_for_publish import CreateGpxTrackFromFitActivity
+from convert_fit_to_gpx import CreateGpxTrackFromFitActivity
+
+####################################################################################
+### This module creates a map image with a track from a garmin activity file
+### using the Google Maps STATIC API.
+###
+### ATTENTION: The STATIC API does not support hybrid or satellite maps!!!
+####################################################################################
 
 def __ReadGoogleApiKey() -> str:
     """ Reads the Google API key from file.
@@ -69,7 +76,8 @@ def __MakeGpxTrackAndCenterIt(fitFilename : str) -> tuple[str, float, float]:
 
 def __CreateAndSaveMapImage(img_filename : str, center_latitude : float, center_longitude : float,
              img_width : int, img_height : int, map_type : str,
-             path_points : str, path_color : str = "0xFF000080", path_width : int = 3) -> None:
+             path_points : str, path_color : str = "0xFF000080", path_width : int = 3,
+             scale : int | None = None) -> None:
     """ Creates the map with the track and stores it in an image file.
 
     Args:
@@ -85,10 +93,15 @@ def __CreateAndSaveMapImage(img_filename : str, center_latitude : float, center_
 
     """
 
+    if (scale is not None) and ((scale < 1) or (scale > 2)):
+        raise Exception(f"Invalid value for scale: {scale} (must be 1 or 2)")
+    
     imgFormat = "PNG"
     googleApiKey = __ReadGoogleApiKey()
+    scale_str = f"&scale={scale}" if scale is not None else ""
 
-    query = f"https://maps.googleapis.com/maps/api/staticmap?center={center_latitude},{center_longitude}&size={img_width}x{img_height}&maptype={map_type}&format={imgFormat}&key={googleApiKey}&path=color:{path_color}|weight:{path_width}|{path_points}"
+    query = f"https://maps.googleapis.com/maps/api/staticmap?center={center_latitude},{center_longitude}&size={img_width}x{img_height}{scale_str}&maptype={map_type}&format={imgFormat}&key={googleApiKey}&path=color:{path_color}|weight:{path_width}|{path_points}"
+    # print(query)
 
     r = requests.get(query)
 
@@ -100,7 +113,8 @@ def __CreateAndSaveMapImage(img_filename : str, center_latitude : float, center_
 
 def CreateImageWithTrackOnMap(fit_filename : str, output_filename : str,
                           img_width : int, img_height : int, map_type : str,
-                          path_color : str = "0xFF000080", path_width : int = 3) -> None:
+                          path_color : str = "0xFF000080", path_width : int = 3,
+                          scale : int | None = None) -> None:
     """ Creates an image from a track on a map with Google Maps.
 
     Args:
@@ -113,14 +127,15 @@ def CreateImageWithTrackOnMap(fit_filename : str, output_filename : str,
         path_width (int, optional): The track width. Defaults to 3.
     """
     track, center_latitude, center_longitude = __MakeGpxTrackAndCenterIt(fit_filename)
-    __CreateAndSaveMapImage(output_filename, center_latitude, center_longitude, img_width, img_height, map_type, track, path_color, path_width)
+    __CreateAndSaveMapImage(output_filename, center_latitude, center_longitude, img_width, img_height, map_type, track, path_color, path_width, scale)
 
+# for testing only
 if __name__ == "__main__":
 
-    CreateImageWithTrackOnMap("Pfaffenstein Quirl.fit", "map1.png", 800, 600, "hybrid", "0xFF000080", 3)
-    CreateImageWithTrackOnMap("Pfaffenstein Quirl.fit", "map2.png", 800, 600, "roadmap", "0xFF000080", 3)
-    CreateImageWithTrackOnMap("Pfaffenstein Quirl.fit", "map3.png", 800, 600, "terrain", "0xFF000080", 3)
-    CreateImageWithTrackOnMap("Pfaffenstein Quirl.fit", "map4.png", 800, 600, "satellite", "0xFF000080", 3)
+    # CreateImageWithTrackOnMap("test.fit", "map1.png", 800, 600, "hybrid", "0xFF000080", 3)
+    CreateImageWithTrackOnMap("test.fit", "map2.png", 800, 600, "roadmap", "0xFF000080", 3)
+    CreateImageWithTrackOnMap("test.fit", "map3.png", 800, 600, "terrain", "0xFF000080", 3)
+    # CreateImageWithTrackOnMap("test.fit", "map4.png", 800, 600, "satellite", "0xFF000080", 3)
 
 
 

@@ -9,9 +9,16 @@ Pytohn packages:
 - gpxpy
 - matplotlib
 - json
+- playwright
 
 ```bash
-python3 -m pip install garmin-fit-sdk staticmap gpxpy matplotlib json
+python3 -m pip install garmin-fit-sdk staticmap gpxpy matplotlib playwright json
+```
+
+**Initialize playwright once after install:**
+
+```bash
+playwright install
 ```
 
 ## convert_fit_to_gpx

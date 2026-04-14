@@ -2,7 +2,7 @@
 
 """
 
-Copyright (C) 2025  Torsten Brischalle
+Copyright (C) 2026  Torsten Brischalle
 email: torsten@brischalle.de
 web: http://www.aaabbb.de
 
@@ -63,6 +63,7 @@ def CreateImageWithTrackOnMap(fit_filename : str, output_filename : str,
     image = map.render()
     image.save(output_filename)
 
+# for testing only
 if __name__ == "__main__":
     CreateImageWithTrackOnMap("Pfaffenstein Quirl.fit", "map5.png", 800, 600, "red", 3)
 

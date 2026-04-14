@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """
 
-Copyright (C) 2025  Torsten Brischalle
+Copyright (C) 2026  Torsten Brischalle
 email: torsten@brischalle.de
 web: http://www.aaabbb.de
 
@@ -24,6 +24,8 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
 """
 
+import gpxpy
+import gpxpy.gpx
 import garmin_fit_sdk as garmin # type: ignore
 import xml.dom.minidom as xmd
 import argparse
@@ -32,10 +34,19 @@ from typing import Any
 from pathlib import Path
 
 class TrackPoint:
+    """ Represents a single GPS track point with position and time information. """
+
     Latitude : float
+    """ Geographic latitude in degrees. """
+
     Longitude : float
+    """ Geographic longitude in degrees. """
+
     Altitude  : float
+    """ Altitude above sea level in meters. """
+
     Time : datetime
+    """ Timestamp of the track point. """
     
 def SemicircleToDegress(semicircles : int) -> float:
     """ Converts semicircles to degrees.
@@ -60,10 +71,10 @@ def DegreesToSemicircles(degrees : float) -> int:
     return int(degrees * (2 ** 31) / 180.0)
 
 def ReadFitFile(fitFilename : str) -> dict[str, list[Any]]:
-    """ Reads the FIT file.
+    """ Reads the Garmin FIT file.
 
     Args:
-        fitFilename (str): FIT filename.
+        fitFilename (str): The name of the FIT file.
 
     Returns:
         dict[str, list[Any]]: The messages stored in the FIT file.
@@ -169,7 +180,7 @@ def WriteGpxFile(gpxFilename : str, name : str, trackType : str, pointList : lis
     """ Writes the GPX file
 
     Args:
-        gpxFilename (str): _description_
+        gpxFilename (str): The name of the file.
         name (str): The name of the track.
         trackType (str): The type of the track activity, e.g. hiking.
         pointList (list[TrackPoint]): List of track points.
@@ -193,7 +204,14 @@ def WriteGpxFile(gpxFilename : str, name : str, trackType : str, pointList : lis
         doc.writexml(file, encoding="UTF-8", addindent="  ", newl="\n")
 
 def ConvertFitFileToGpxFile(fitFilename : str, gpxFilename : str, removePointsBegin : int = 0, removePointsEnd : int = 0) -> None:
+    """ Converts a Garmin FIT file to a GPX track.
 
+    Args:
+        fitFilename (str): The name of the FIT file.
+        gpxFilename (str): The name of the GPX file.
+        removePointsBegin (int, optional): Number of points to remove from the beginning of the track. Defaults to 0.
+        removePointsEnd (int, optional): Number of points to remove from the end of the track. Defaults to 0.
+    """
     messages = ReadFitFile(fitFilename)
 
     trackType = messages["sport_mesgs"][0]["sport"]
@@ -210,8 +228,47 @@ def ConvertFitFileToGpxFile(fitFilename : str, gpxFilename : str, removePointsBe
     name = Path(fitFilename).stem
     WriteGpxFile(gpxFilename, name, trackType, pointList)
 
-if __name__ == "__main__":
+def CreateGpxTrackFromFitActivity(fitFilename : str, removePointsBegin : int = 0, removePointsEnd : int = 0) -> gpxpy.gpx.GPX:
+    """ Converts FIT activity track to GPX track.
 
+    Args:
+        fitFilename (str): The FIT activity filename.
+
+    Returns:
+        gpxpy.gpx.GPX: The GPX track.
+    """
+    messages = ReadFitFile(fitFilename)
+    pointList = GetTrackPointsFromMessages(messages)
+
+    if removePointsBegin > 0:
+        pointList = pointList[removePointsBegin : ]
+
+    if removePointsEnd > 0:
+        pointList = pointList[ : -removePointsEnd]
+
+    gpx = gpxpy.gpx.GPX()
+
+    # create a track
+    gpx_track = gpxpy.gpx.GPXTrack()
+    gpx.tracks.append(gpx_track)
+
+    # create a segment
+    gpx_segment = gpxpy.gpx.GPXTrackSegment()
+    gpx_track.segments.append(gpx_segment)
+
+    # add points
+    for p in pointList:
+        point = gpxpy.gpx.GPXTrackPoint(p.Latitude, p.Longitude, elevation=p.Altitude, time=p.Time)
+        gpx_segment.points.append(point)
+
+    return gpx
+
+###################################################################################################
+# The standalone application starts here.
+###################################################################################################
+
+if __name__ == "__main__":
+    
     argParser = argparse.ArgumentParser("convert_fit_to_gpx", description="Converts tracks from Garmin activity FIT files to GPX files.")
     argParser.add_argument("filename", help='input filename "abc.FIT"')
     argParser.add_argument("-rb", "--remove_begin", help="remove number of points from the begin of the track", required=False)
