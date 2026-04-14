@@ -194,11 +194,11 @@ def PrepareTrackForPublish(fitFilepath : str, altitudeProfileImgWidth : int, alt
     OutputAltitudeProfile(smoothedTrack, basename + "_altitude.png", altitudeProfileImgWidth, altitudeProfileImgHeight)
 
     # track_color = "0xFF000080"
-    track_color = "#B00000"
+    track_color = "#E00000"
 
     print("create preview maps ...")
     create_map_openstreetmap.CreateImageWithTrackOnMap(fitFilepath, basename + "_map_preview1.png", mapPreviewImgWidth, mapPreviewImgHeight, "red", 3)
-    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basename + "_map_preview2.png", mapPreviewImgWidth, mapPreviewImgHeight, "hybrid", track_color, 3)
+    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basename + "_map_preview2.jpg", mapPreviewImgWidth, mapPreviewImgHeight, "hybrid", track_color, 3)
     create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basename + "_map_preview3.png", mapPreviewImgWidth, mapPreviewImgHeight, "terrain", track_color, 3)
 
     print("create maps ...")

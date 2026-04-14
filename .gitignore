@@ -3,6 +3,7 @@
 *.gpx
 *.html
 *.png
+*.jpg
 *.shp
 *.shp.zip
 *.json

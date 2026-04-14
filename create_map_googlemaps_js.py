@@ -75,15 +75,13 @@ def __MakeGpxTrackAndCenterIt(fitFilename : str) -> tuple[str, float, float]:
 
     return ",".join(point_list), center_latitude, center_longitude # type: ignore
 
-def __CreateAndSaveMapImage(img_filename : str, center_latitude : float, center_longitude : float,
+def __CreateAndSaveMapImage(img_filename : str,
              img_width : int, img_height : int, map_type : str,
-             path_points : str, path_color : str = "0xFF000080", path_width : int = 3) -> None:
+             path_points : str, path_color : str = "#C0000000", path_width : int = 3) -> None:
     """ Creates the map with the track and stores it in an image file.
 
     Args:
         img_filename (str): The name of the image file. (PNG)
-        center_latitude (float): The track center latitude.
-        center_longitude (float): The track center longitude.
         img_width (int): The image width in pixels.
         img_height (int): The image height in pixels.
         map_type (str): The map type: roadmap, terrain, satellite, hybrid.
@@ -119,7 +117,8 @@ def __CreateAndSaveMapImage(img_filename : str, center_latitude : float, center_
             const map = new google.maps.Map(document.getElementById("map"), {{
                 center: bounds.getCenter(),
                 zoom: 14,
-                mapTypeId: "{map_type}"
+                mapTypeId: "{map_type}",
+                disableDefaultUI: true
             }});
 
             map.fitBounds(bounds, {pixel_bounds});
@@ -169,9 +168,9 @@ def CreateImageWithTrackOnMap(fit_filename : str, output_filename : str,
         path_width (int, optional): The track width. Defaults to 3.
     """
 
-    track, center_latitude, center_longitude = __MakeGpxTrackAndCenterIt(fit_filename)
+    track, _, _ = __MakeGpxTrackAndCenterIt(fit_filename)
 
-    __CreateAndSaveMapImage(output_filename, center_latitude, center_longitude,
+    __CreateAndSaveMapImage(output_filename,
                             img_width, img_height,
                             map_type,
                             track,
@@ -181,12 +180,12 @@ def CreateImageWithTrackOnMap(fit_filename : str, output_filename : str,
 if __name__ == "__main__":
 
     file_name = "test.fit"
-    color = "#B00000"
+    color = "#E00000"
 
-    CreateImageWithTrackOnMap(file_name, "map1.png", 800, 600, "hybrid", color, 3)
+    CreateImageWithTrackOnMap(file_name, "map1.jpg", 800, 600, "hybrid", color, 3)
     CreateImageWithTrackOnMap(file_name, "map2.png", 800, 600, "roadmap", color, 3)
     CreateImageWithTrackOnMap(file_name, "map3.png", 800, 600, "terrain", color, 3)
-    CreateImageWithTrackOnMap(file_name, "map4.png", 800, 600, "satellite", color, 3)
+    CreateImageWithTrackOnMap(file_name, "map4.jpg", 800, 600, "satellite", color, 3)
 
 
 
