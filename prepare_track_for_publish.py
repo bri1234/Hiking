@@ -169,7 +169,7 @@ def OutputAltitudeProfile(gpx : gpxpy.gpx.GPX, filename : str, width : int, heig
     fig.tight_layout()
     plt.savefig(filename) # type: ignore
 
-    plt.show() # type: ignore
+    # plt.show() # type: ignore
 
 def PrepareTrackForPublish(fitFilepath : str, altitudeProfileImgWidth : int, altitudeProfileImgHeight : int,
                            mapPreviewImgWidth : int, mapPreviewImgHeight : int,
