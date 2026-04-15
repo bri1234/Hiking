@@ -48,7 +48,7 @@ MAP_IMG_WIDTH = 1500
 MAP_IMG_HEIGHT = 1500
 
 
-def OutputStatistic(gpx : gpxpy.gpx.GPX, filename : str) -> None:
+def SaveAllTrackInfosAsHtml(gpx : gpxpy.gpx.GPX, filename : str, name : str) -> None:
     """ Creates a HTML table with the track statistic and saves it.
 
     Args:
@@ -81,41 +81,59 @@ def OutputStatistic(gpx : gpxpy.gpx.GPX, filename : str) -> None:
     uphill, downhill = gpx.get_uphill_downhill()
     print(f"Uphill: {uphill:.1f} m downhill: {downhill:.1f} m")
 
-    table = '<table class="stat_table">'
-    tr = '<tr class="stat_tr">'
-    td = '<td class="stat_td">'
+    base = f"/{name}_published/{name}"
+
+    html_code = f"""
+<div class="wp-block-columns is-layout-flex wp-container-core-columns-is-layout-9d6595d7 wp-block-columns-is-layout-flex">
+    <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow">
+        <figure class="wp-block-image size-large">
+            <a href="{base}_map1.png">
+                <img decoding="async" src="{base}_map_preview1.png" alt=""/>
+            </a>
+        </figure>
+    </div>
+    <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow">
+        <figure class="wp-block-image size-large">
+            <a href="{base}_map2.jpg">
+                <img decoding="async" src="{base}_map_preview2.jpg" alt=""/>
+            </a>
+        </figure>
+    </div>
+</div>
+<figure class="wp-block-table">
+    <table class="has-fixed-layout">
+        <tbody>
+            <tr>
+                <td><strong>Länge:</strong></td><td>{moving_distance / 1000:.1f} km</td>
+                <td><strong>Dauer:</strong></td><td>{hours} h {minutes:02d} min</td>
+            </tr>
+            <tr>
+                <td><strong>&Oslash; Geschwindigkeit:</strong></td><td>{moving_distance / moving_time * 3.6:.1f} km/h</td>
+                <td><strong>Höhenunterschied:</strong></td><td>{maxElevation - minElevation:.1f} m</td>
+            </tr>
+            <tr>
+                <td><strong>Minimale Höhe:</strong></td><td>{minElevation:.1f} m</td>
+                <td><strong>Maximale Höhe:</strong></td><td>{maxElevation:.1f} m</td>
+            </tr>
+            <tr>
+                <td><strong>Bergauf:</strong></td><td>{uphill:.1f} m</td>
+                <td><strong>Bergab:</strong></td><td>{downhill:.1f} m</td>
+            </tr>
+            <tr>
+                <td><strong>GPX Track</strong></td><td><a href="{base}.gpx">{name}.gpx</a></td>
+            </tr>
+        </tbody>
+    </table>
+</figure>
+<figure class="wp-block-image size-large">
+    <img decoding="async" src="{base}_altitude.png" alt=""/>
+</figure>
+"""
     
     with open(filename, "w") as file:
-        file.write(f"{table}\n")
-        file.write(f"{tr}\n")
+        file.write(html_code)
 
-        file.write(f"{td}Dauer:</td>{td}{hours} Stunden {minutes:02d} Minuten</td>\n")
-
-        file.write(f"{td}Länge:</td>{td}{moving_distance / 1000:.1f} km</td>\n")
-
-        file.write(f"{td}Geschwindigkeit:</td>{td}{moving_distance / moving_time * 3.6:.1f} km/h</td>\n")
-        
-        file.write(f"</tr>\n")
-        file.write(f"<tr>\n")
-
-        file.write(f"{td}Minimale Höhe:</td>{td}{minElevation:.1f} m</td>\n")
-        file.write(f"{td}Minimale Höhe:</td>{td}{maxElevation:.1f} m</td>\n")
-        file.write(f"{td}Höhenunterschied:</td>{td}{maxElevation - minElevation:.1f} m</td>\n")
-        file.write(f"{td}Bergauf:</td>{td}{uphill:.1f} m</td>\n")
-        file.write(f"{td}Bergab:</td>{td}{downhill:.1f} m</td>\n")
-        
-        file.write(f"</tr>\n")
-
-        file.write(f"<tr>\n")
-        file.write(f"{td}Schwierigkeitsgrad:</td>{td}</td>\n")
-        file.write(f"{td}Kondition:</td>{td}</td>\n")
-        file.write(f"{td}Ausrüstung:</td>{td}</td>\n")
-        file.write(f"{td}</td>{td}</td>\n")
-        file.write(f"</tr>\n")
-
-        file.write(f"</table>\n")
-
-def OutputSmoothedTrack(gpx : gpxpy.gpx.GPX, filename : str) -> gpxpy.gpx.GPX:
+def SaveSmoothedTrackAsGpx(gpx : gpxpy.gpx.GPX, filename : str) -> gpxpy.gpx.GPX:
     """ Creates a smoothed track and saves it.
 
     Args:
@@ -132,7 +150,7 @@ def OutputSmoothedTrack(gpx : gpxpy.gpx.GPX, filename : str) -> gpxpy.gpx.GPX:
 
     return cloned_gpx
 
-def OutputAltitudeProfile(gpx : gpxpy.gpx.GPX, filename : str, width : int, height : int) -> None:
+def SaveAltitudeProfileImage(gpx : gpxpy.gpx.GPX, filename : str, width : int, height : int) -> None:
     """ Creates an altutude profile image and saves it (PNG image).
 
     Args:
@@ -171,40 +189,40 @@ def OutputAltitudeProfile(gpx : gpxpy.gpx.GPX, filename : str, width : int, heig
 
     # plt.show() # type: ignore
 
-def PrepareTrackForPublish(fitFilepath : str, altitudeProfileImgWidth : int, altitudeProfileImgHeight : int,
+def PrepareTrackForWordpressPublish(fitFilepath : str, altitudeProfileImgWidth : int, altitudeProfileImgHeight : int,
                            mapPreviewImgWidth : int, mapPreviewImgHeight : int,
                            mapImgWidth : int, mapImgHeight : int,
                            removePointsBegin : int = 0, removePointsEnd : int = 0) -> None:
-    """ Prepares the track for publishing: creates statistic, high profile and a smoothed GPX track.
+    """ Prepares the track for publishing on Wordpress: creates statistic, high profile and a smoothed GPX track.
 
     Args:
         fitFilename (str): the FIT activity filename.
     """
 
+    name = Path(fitFilepath).stem
     basedir = str(Path(fitFilepath).with_suffix("")) + "_published"
     Path(basedir).mkdir(exist_ok=True)
-    basename = str(Path(basedir).joinpath(Path(fitFilepath).stem))
+    basepath = str(Path(basedir).joinpath(name))
 
     gpx = CreateGpxTrackFromFitActivity(fitFilepath, removePointsBegin, removePointsEnd)
 
-    OutputStatistic(gpx, basename + ".html")
+    SaveAllTrackInfosAsHtml(gpx, basepath + ".html", name)
 
-    smoothedTrack = OutputSmoothedTrack(gpx, basename + ".gpx")
+    smoothedTrack = SaveSmoothedTrackAsGpx(gpx, basepath + ".gpx")
 
-    OutputAltitudeProfile(smoothedTrack, basename + "_altitude.png", altitudeProfileImgWidth, altitudeProfileImgHeight)
+    SaveAltitudeProfileImage(smoothedTrack, basepath + "_altitude.png", altitudeProfileImgWidth, altitudeProfileImgHeight)
 
-    # track_color = "0xFF000080"
     track_color = "#E00000"
 
-    print("create preview maps ...")
-    create_map_openstreetmap.CreateImageWithTrackOnMap(fitFilepath, basename + "_map_preview1.png", mapPreviewImgWidth, mapPreviewImgHeight, "red", 3)
-    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basename + "_map_preview2.jpg", mapPreviewImgWidth, mapPreviewImgHeight, "hybrid", track_color, 3)
-    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basename + "_map_preview3.png", mapPreviewImgWidth, mapPreviewImgHeight, "terrain", track_color, 3)
+    # print("create preview maps ...")
+    create_map_openstreetmap.CreateImageWithTrackOnMap(fitFilepath, basepath + "_map_preview1.png", mapPreviewImgWidth, mapPreviewImgHeight, "red", 3)
+    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basepath + "_map_preview2.jpg", mapPreviewImgWidth, mapPreviewImgHeight, "hybrid", track_color, 3)
+    # create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basepath + "_map_preview3.png", mapPreviewImgWidth, mapPreviewImgHeight, "terrain", track_color, 3)
 
-    print("create maps ...")
-    create_map_openstreetmap.CreateImageWithTrackOnMap(fitFilepath, basename + "_map1.png", mapImgWidth, mapImgHeight, "red", 3)
-    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basename + "_map2.png", 1280, 1280, "hybrid", track_color, 3)
-    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basename + "_map3.png", 1280, 1280, "terrain", track_color, 3)
+    # print("create maps ...")
+    create_map_openstreetmap.CreateImageWithTrackOnMap(fitFilepath, basepath + "_map1.png", mapImgWidth, mapImgHeight, "red", 3)
+    create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basepath + "_map2.jpg", 1280, 1280, "hybrid", track_color, 3)
+    # create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basepath + "_map3.png", 1280, 1280, "terrain", track_color, 3)
 
     print("done")
 
@@ -232,7 +250,7 @@ if __name__ == "__main__":
     if args.stopped_speed_threshold is not None:
         stoppedSpeedThreshold = float(args.stopped_speed_threshold)
 
-    PrepareTrackForPublish(args.filename,
+    PrepareTrackForWordpressPublish(args.filename,
                            ALTITUDE_PROFILE_IMG_WIDTH, ALTITUDE_PROFILE_IMG_HEIGHT,
                            MAP_PREVIEW_IMG_WIDTH, MAP_PREVIEW_IMG_HEIGHT,
                            MAP_IMG_WIDTH, MAP_IMG_HEIGHT,
