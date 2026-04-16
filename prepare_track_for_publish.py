@@ -233,7 +233,7 @@ def PrepareTrackForWordpressPublish(fitFilepath : str, altitudeProfileImgWidth :
     # create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basepath + "_map3.png", 1280, 1280, "terrain", track_color, 3)
 
     create_overview_map.CreateImageOverviewMap(fitFilepath, basepath + "_overview.jpg", mapPreviewImgWidth, mapPreviewImgHeight, zoom=8, path_color=track_color, path_width=3)
-    create_overview_map.CreateImageOverviewMap(fitFilepath, basepath + "_overview_large.jpg", mapImgWidth, mapImgHeight, zoom=7, path_color=track_color, path_width=3)
+    create_overview_map.CreateImageOverviewMap(fitFilepath, basepath + "_overview_large.jpg", 900, 900, zoom=8, path_color=track_color, path_width=3)
 
     print("done")
 
