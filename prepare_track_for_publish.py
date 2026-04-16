@@ -100,6 +100,13 @@ def SaveAllTrackInfosAsHtml(gpx : gpxpy.gpx.GPX, filename : str, name : str) -> 
             </a>
         </figure>
     </div>
+    <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow">
+        <figure class="wp-block-image size-large">
+            <a href="{base}_overview_large.jpg">
+                <img decoding="async" src="{base}_overview.jpg" alt=""/>
+            </a>
+        </figure>
+    </div>
 </div>
 <figure class="wp-block-table">
     <table class="has-fixed-layout">
@@ -225,8 +232,9 @@ def PrepareTrackForWordpressPublish(fitFilepath : str, altitudeProfileImgWidth :
     create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basepath + "_map2.jpg", 1280, 1280, "hybrid", track_color, 3)
     # create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basepath + "_map3.png", 1280, 1280, "terrain", track_color, 3)
 
-    create_overview_map.CreateImageOverviewMap(fitFilepath, basepath + "_overview.png", mapPreviewImgWidth, mapPreviewImgHeight, zoom=8, path_color=track_color, path_width=3)
-    
+    create_overview_map.CreateImageOverviewMap(fitFilepath, basepath + "_overview.jpg", mapPreviewImgWidth, mapPreviewImgHeight, zoom=8, path_color=track_color, path_width=3)
+    create_overview_map.CreateImageOverviewMap(fitFilepath, basepath + "_overview_large.jpg", mapImgWidth, mapImgHeight, zoom=7, path_color=track_color, path_width=3)
+
     print("done")
 
 ###################################################################################################
