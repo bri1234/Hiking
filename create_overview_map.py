@@ -26,21 +26,22 @@ IN THE SOFTWARE.
 """
 
 import random
-from staticmap import StaticMap, Line 
+from staticmap import StaticMap, CircleMarker, Line 
 from convert_fit_to_gpx import ReadFitFile, GetTrackPointsFromMessages
 
-def CreateImageWithTrackOnMap(fit_filename : str, output_filename : str,
-                              img_width : int, img_height : int,
-                              path_color : str = "red", path_width : int = 3) -> None:
-    """ Creates an image from a track on a map with Open street map.
+def CreateImageOverviewMap(fit_filename : str,
+                           output_filename : str,
+                           img_width : int, img_height : int,
+                           zoom : int = 8,
+                           path_color : str = "red", path_width : int = 3) -> None:
+    """ Creates an overview image showing a specific area on the map.
 
     Args:
-        fit_filename (str): The garmin activity filename.
+        fit_filename (str): The FIT file containing the track data.
         output_filename (str): The image output filename. (PNG)
-        img_width (int): The image widht in pixels.
-        img_height (int): The image high in pixels.
-        path_color (str, optional): The track color (suitable for PIL/Pillow, e.g. red, blue). Defaults to "red".
-        path_width (int, optional): The track width. Defaults to 3.
+        img_width (int): The image width in pixels.
+        img_height (int): The image height in pixels.
+        zoom (int): The zoom level of the map.
     """
     fitMessages = ReadFitFile(fit_filename)
     pointList = GetTrackPointsFromMessages(fitMessages)
@@ -48,11 +49,13 @@ def CreateImageWithTrackOnMap(fit_filename : str, output_filename : str,
     server_list = [ "a", "b", "c" ]
     server = server_list[random.randint(0, len(server_list) - 1)]
 
-    url_tmp = "https://" + server + ".tile.openstreetmap.de/{z}/{x}/{y}.png"
-    #url_tmp = "https://" + server + ".tile.openstreetmap.org/{z}/{x}/{y}.png"
-    #url_tmp = "https://" + server + ".tile.opentopomap.org/{z}/{x}/{y}.png"
+    url_tmp = "https://" + server + ".tile.opentopomap.org/{z}/{x}/{y}.png"
 
     map = StaticMap(img_width, img_height, url_template=url_tmp)
+
+    centerLongitude = 0.0
+    centerLatitude = 0.0
+    cnt = 0
 
     for idx in range(1, len(pointList) - 3):
         p1 = pointList[idx - 1]
@@ -60,10 +63,20 @@ def CreateImageWithTrackOnMap(fit_filename : str, output_filename : str,
         line = Line( ( (p1.Longitude, p1.Latitude), (p2.Longitude, p2.Latitude)), path_color, path_width )
         map.add_line(line)
 
-    image = map.render()
+        centerLongitude += p1.Longitude
+        centerLatitude += p1.Latitude
+        cnt += 1
+
+    centerLongitude /= cnt
+    centerLatitude /= cnt
+    center = (centerLongitude, centerLatitude)
+
+    map.add_marker(CircleMarker(center, "red", 15))
+
+    image = map.render(zoom=zoom, center=center)
     image.save(output_filename)
 
 # for testing only
 if __name__ == "__main__":
-    CreateImageWithTrackOnMap("Pfaffenstein Quirl.fit", "map5.png", 800, 600, "red", 3)
+    CreateImageOverviewMap("test.fit", "germany.png", 400, 400, zoom=8)
 

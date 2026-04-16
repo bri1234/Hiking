@@ -35,6 +35,7 @@ import matplotlib.pyplot as plt
 import math
 import create_map_googlemaps_js as create_map_googlemaps
 import create_map_openstreetmap
+import create_overview_map
 
 stoppedSpeedThreshold = 0.15
 
@@ -224,6 +225,8 @@ def PrepareTrackForWordpressPublish(fitFilepath : str, altitudeProfileImgWidth :
     create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basepath + "_map2.jpg", 1280, 1280, "hybrid", track_color, 3)
     # create_map_googlemaps.CreateImageWithTrackOnMap(fitFilepath, basepath + "_map3.png", 1280, 1280, "terrain", track_color, 3)
 
+    create_overview_map.CreateImageOverviewMap(fitFilepath, basepath + "_overview.png", mapPreviewImgWidth, mapPreviewImgHeight, zoom=8, path_color=track_color, path_width=3)
+    
     print("done")
 
 ###################################################################################################
