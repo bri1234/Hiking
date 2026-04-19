@@ -90,6 +90,12 @@ def ReadFitFile(fitFilename : str) -> dict[str, list[Any]]:
     stream.reset()
     messages, _ = decoder.read() # type: ignore
 
+    # print start time of the activity
+    if "session_mesgs" in messages and messages["session_mesgs"]:
+        start_time = messages["session_mesgs"][0].get("start_time")
+        if start_time:
+            print(f"Activity start time: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+
     return messages # type: ignore
 
 def GetTrackPointsFromMessages(messages : dict[str, list[Any]]) -> list[TrackPoint]:
